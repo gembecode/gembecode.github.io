@@ -10,7 +10,7 @@ const PROVIDERS = {
  // Ganti dengan URL Worker Nixpoin Anda
 };
 
-let activeProviderKey = localStorage.getItem('xurel_provider') || "smscode";
+let activeProviderKey = localStorage.getItem('xurel_provider') || "herosms";
 let BASE_URL = PROVIDERS[activeProviderKey].url;
 
 let currentServerName = ""; 
