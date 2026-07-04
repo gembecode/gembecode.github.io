@@ -2,11 +2,11 @@ import { showModal } from './ui.js';
 
 // Konfigurasi Firebase Anda yang baru (sms-xurel)
 const firebaseConfig = {
-                apiKey: "AIzaSyC7KMPorNrZ4FzsYmQA1pMQh-X6f3YFPuI",
-                authDomain: "jeff-link.firebaseapp.com",
-                databaseURL: "https://jeff-link-default-rtdb.asia-southeast1.firebasedatabase.app",
-                projectId: "jeff-link",
-                storageBucket: "jeff-link.firebasestorage.app"
+ apiKey: "AIzaSyC7KMPorNrZ4FzsYmQA1pMQh-X6f3YFPuI",
+ authDomain: "jeff-link.firebaseapp.com",
+ databaseURL: "https://jeff-link-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId: "jeff-link",
+ storageBucket: "jeff-link.firebasestorage.app"
 };
 
 // Inisialisasi Firebase menggunakan metode Compat (agar web tidak rusak)
