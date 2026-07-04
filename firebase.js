@@ -2,14 +2,13 @@ import { showModal } from './ui.js';
 
 // Konfigurasi Firebase Anda yang baru (sms-xurel)
 const firebaseConfig = {
-  apiKey: "AIzaSyB09rF41W2HGNFCNrRM0E7UXG_Pp7Hutks",
-  authDomain: "smsgembe.firebaseapp.com",
-  databaseURL: "https://sms-xurel-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "smsgembe",
-  storageBucket: "smsgembe.firebasestorage.app",
-  messagingSenderId: "826865185951",
-  appId: "1:826865185951:web:d458a23b2cb49c34025eaa",
-  measurementId: "G-TY8XBESXC2"
+  apiKey: "AIzaSyBZyxsg2YYQJYdnrb2F8zSA57JTHbGwXFA",
+  authDomain: "gembecode.firebaseapp.com",
+  databaseURL: "https://gembecode-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gembecode",
+  storageBucket: "gembecode.firebasestorage.app",
+  messagingSenderId: "52756943352",
+  appId: "1:52756943352:web:09addfe720c61e5413060d"
 };
 
 // Inisialisasi Firebase menggunakan metode Compat (agar web tidak rusak)
