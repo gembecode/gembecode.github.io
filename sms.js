@@ -7,8 +7,7 @@ import { db } from './firebase.js';
 const PROVIDERS = {
     "smscode": { name: "COD", url: "https://code.camarugulam.workers.dev" },
     "herosms": { name: "HER", url: "https://hero.camarugulam.workers.dev" },
-    "svco": { name: "SVC", url: "https://svco.camarugulam.workers.dev" }
-};
+    "svco": { name: "SVC", url: "https://svco.camarugulam.workers.dev" }};
 
 let activeProviderKey = localStorage.getItem('xurel_provider') || "smscode";
 let BASE_URL = PROVIDERS[activeProviderKey].url;
@@ -320,13 +319,11 @@ export async function renderPricesForOperator(op) {
     
     if (res.success && res.data && res.data.length > 0) {
         let htmlList = res.data.map(item => {
-            // Kita bungkus ID Katalog Produk ke dalam variabel `catalogId`
             let catalogId = item.catalog_product_id || item.id; 
             let numOpId = item.injected_operator_id; 
             let displayPrice = formatPrice(item.price);
             let currentStock = item.available !== undefined ? item.available : "~";
             
-            // Perhatikan pengiriman variabel: catalogId, item.price, name, operator text, dan operator ID (numOpId)
             return `<div class="price-item" onclick="executeBuySms('${catalogId}', ${item.price}, '${op.toUpperCase()}', '${op}', '${numOpId}')">
                         <div style="flex: 1; min-width: 0; padding-right: 10px; display:flex; align-items:center;">
                             <div style="font-weight:900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color:var(--fb-text);">${op.toUpperCase()}</div>
@@ -406,7 +403,9 @@ async function loadSmsPrices() {
             if (shopeeData) {
                 let pid = shopeeData.serviceId || "1"; 
                 let countryId = shopeeData.country || 1; 
-                let prices = (shopeeData.customPrice || []).filter(p => parseFloat(p.price) <= 0.06885).sort((a, b) => parseFloat(b.price) - parseFloat(a.price)); 
+                
+                // PERBAIKAN: Mengubah filter harga maksimal jadi 0.99
+                let prices = (shopeeData.customPrice || []).filter(p => parseFloat(p.price) <= 0.99).sort((a, b) => parseFloat(b.price) - parseFloat(a.price)); 
                 
                 let operators = (shopeeData.operators || []).filter(o => o.code && o.code.toLowerCase() !== 'any');
                 operators.unshift({ name: "ANY (ACAK)", code: "any" });
@@ -510,17 +509,14 @@ export async function executeBuySms(pid, price, name, operator, rank = "") {
     } else if (["herosms", "smsbower", "otpcepat", "nixpoin"].includes(activeProviderKey)) {
         payload = { product_id: String(pid), price: price, operator: operator };
     } else if (activeProviderKey === "smscode") {
-        // PEMBAGIAN LOGIKA MUTLAK UNTUK SMSCODE
         if (operator !== "any") {
-            // Jika pilih operator spesifik (Routed Order)
             payload = { 
                 type: "catalog", 
                 catalog_product_id: parseInt(pid), 
-                operator_id: parseInt(rank), // Rank di sini adalah ID Angka Server yang diselipkan tadi
+                operator_id: parseInt(rank),
                 max_price: parseInt(price)
             };
         } else {
-            // Jika pilih ACAK (Direct Order)
             payload = { type: "product", product_id: parseInt(pid) };
         }
     } else {
@@ -609,10 +605,30 @@ function renderSmsOrders(orders) {
     
     const activeIds = orders.map(o => String(o.id));
     const currentCards = container.querySelectorAll('.order-card');
+    
+    // LOGIKA PENGHAPUSAN KARTU (TIDAK LANGSUNG DIHAPUS JIKA SUDAH ADA OTP)
     currentCards.forEach(card => {
         const cardId = card.id.replace(`order-${activeProviderKey}-`, '');
         if (!activeIds.includes(cardId)) {
-            card.remove(); 
+            const otpBox = card.querySelector('.otp-container');
+            const hasOtp = otpBox && !otpBox.innerHTML.includes('loader-bars');
+            
+            if (!hasOtp) {
+                card.remove(); 
+            } else {
+                const bDone = card.querySelector('.btn-done');
+                if(bDone) { 
+                    bDone.disabled = false; 
+                    bDone.style.background = "#e6f4ea"; 
+                    bDone.style.color = "var(--fb-green)"; 
+                }
+                const bCancel = card.querySelector('.btn-cancel');
+                if(bCancel) bCancel.disabled = true;
+                const bReplace = card.querySelector('.btn-replace');
+                if(bReplace) bReplace.disabled = true;
+                const bResend = card.querySelector('.btn-resend');
+                if(bResend) bResend.disabled = true;
+            }
         }
     });
 
@@ -623,8 +639,22 @@ function renderSmsOrders(orders) {
         const savedOp = o.operator || "any";
         const extraBadge = getOperatorBadge(activeProviderKey, savedOp, "");
         
-        const orderTime = o.created_at || Date.now();
-        const expire = orderTime + 600000; 
+        const existingCard = document.getElementById(`order-${activeProviderKey}-${o.id}`);
+
+        // PERBAIKAN WAKTU: Pastikan kita tidak menimpa expire yang sudah berjalan jika server gagal memberi tanggal!
+        let orderTime;
+        if (o.created_at) {
+            orderTime = o.created_at; // Waktu real dari server Cloudflare Worker (sinkron antar perangkat)
+        } else if (existingCard) {
+            // Jika api timeout memberikan tanggal tapi kartu sudah jalan di UI, pakai memori UI (Jangan reset!)
+            const oldExpire = parseInt(existingCard.querySelector('.sms-timer').dataset.expire);
+            orderTime = oldExpire - 600000;
+        } else {
+            // Fallback terakhir (misal nomor baru beli tapi server gagal kirim waktu)
+            orderTime = Date.now();
+        }
+
+        const expire = orderTime + 600000; // Timer jalan 10 menit
         const passed2Mins = (Date.now() - orderTime) >= 120000; 
 
         let otpDisplay = o.otp_code ? `<span onclick="copyOtpCode('${o.otp_code}', this)" style="cursor:pointer; color:#00897B; letter-spacing:6px; font-size:32px; font-weight:900; display: inline-flex; align-items: center;" title="Klik untuk menyalin">${o.otp_code.replace(/(\d{3})(?=\d)/g, '$1 ')}</span>` : `<div class="loader-bars"><span></span><span></span><span></span></div>`;
@@ -632,9 +662,9 @@ function renderSmsOrders(orders) {
         const cancelState = (passed2Mins || ["smsbower", "otpcepat", "nixpoin"].includes(activeProviderKey)) && !o.otp_code ? '' : 'disabled';
         const replaceState = (passed2Mins && !["smsbower", "otpcepat", "svco", "nixpoin"].includes(activeProviderKey)) && !o.otp_code ? '' : 'disabled';
 
-        const existingCard = document.getElementById(`order-${activeProviderKey}-${o.id}`);
         if (existingCard) {
             const timerSpan = existingCard.querySelector('.sms-timer');
+            // SEKARANG AMAN: dataset.expire hanya akan sinkron dengan orderTime server (tidak akan mengulang sendiri ke Date.now())
             if (timerSpan) timerSpan.dataset.expire = expire;
 
             const phoneTextSpan = existingCard.querySelector('.phone-text-span');
