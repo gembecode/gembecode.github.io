@@ -7,6 +7,7 @@ import { db } from './firebase.js';
 const PROVIDERS = {
     "smscode": { name: "COD", url: "https://code.camarugulam.workers.dev" },
     "herosms": { name: "HER", url: "https://hero.camarugulam.workers.dev" },
+    "otpinst": { name: "OIN", url: "https://otpinstan.camarugulam.workers.dev" },
     "svco": { name: "SVC", url: "https://svco.camarugulam.workers.dev" }};
 
 let activeProviderKey = localStorage.getItem('xurel_provider') || "smscode";
