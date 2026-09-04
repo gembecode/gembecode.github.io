@@ -5,11 +5,10 @@ import { db, auth } from './firebase.js';
 // 1. KONFIGURASI PROVIDER & HARGA SPESIFIK
 // ==========================================
 const PROVIDERS = {
-    "herosms": { name: "HER", url: "https://hero.aam-zip.workers.dev", currency: "USD", minPrice: 0, maxPrice: 1500 },
-    "hwa":     { name: "HWA", url: "https://hwa.aam-zip.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 3500 },
-    "smsvirtual": { name: "SVC", url: "https://svco.aam-zip.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 1500 },
-    "smscode": { name: "COD", url: "https://sms.aam-zip.workers.dev", currency: "IDR", minPrice: 1310, maxPrice: 1400 },
-    "otpcepat": { name: "CEP", url: "https://cepat.aam-zip.workers.dev", currency: "IDR", minPrice: 0, maxPrice: 2000 } // <-- OtpCepat Ditambahkan
+    "herosms": { name: "HER", url: "https://hero.camarugulam.workers.dev", currency: "USD", minPrice: 0, maxPrice: 1500 },
+    "smsvirtual": { name: "SVC", url: "https://svco.camarugulam.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 1500 },
+    "smscode": { name: "COD", url: "https://code.camarugulam.workers.dev", currency: "IDR", minPrice: 1310, maxPrice: 1400 },
+    "otpcepat": { name: "CEP", url: "https://ocepat.camarugulam.workers.dev", currency: "IDR", minPrice: 0, maxPrice: 2000 } // <-- OtpCepat Ditambahkan
 };
 
 let activeProviderKey = localStorage.getItem('xurel_provider') || "herosms";
