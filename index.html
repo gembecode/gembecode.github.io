@@ -26,13 +26,30 @@
 </head>
 <body>
 
-    <nav class="top-nav">
-        <div style="width: 40px;"></div>
-        
-        <button id="drawer-toggle-btn" onclick="toggleTopDrawer()" style="background: transparent; border: none; width: 40px; height: 40px; border-radius: 50%; color: var(--fb-muted); font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;">
-            <i id="drawer-icon" class="fa-solid fa-chevron-down" style="transition: transform 0.3s;"></i>
-        </button>
+    <nav class="top-nav" style="display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 1002;">
+        <!-- KIRI: Kumpulan Tombol Pintasan -->
+        <div style="display: flex; gap: 6px;">
+            <!-- Tombol Pintasan: Acak Data -->
+            <button id="toolbar-btn-gen" onclick="generateName()" style="background: var(--fb-blue); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Acak Data">
+                <i class="fa-solid fa-shuffle"></i>
+            </button>
 
+            <!-- Tombol A: Daftar Link Acak -->
+            <button id="toolbar-btn-a" onclick="actionRandomLink(event, 'ID_RANDOM_LOCKED', 'copy', this)" style="background: #f1c40f; color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center;" title="Salin Link Acak">
+                <i class="fa-solid fa-dice"></i>
+            </button>
+
+            <!-- Tombol B, C, D, E: Pinned Links -->
+            <button id="toolbar-btn-b" style="display: none; background: var(--fb-green); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; align-items: center; justify-content: center; font-weight: bold; font-size: 13px;"></button>
+            
+            <button id="toolbar-btn-c" style="display: none; background: var(--fb-green); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; align-items: center; justify-content: center; font-weight: bold; font-size: 13px;"></button>
+            
+            <button id="toolbar-btn-d" style="display: none; background: var(--fb-green); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; align-items: center; justify-content: center; font-weight: bold; font-size: 13px;"></button>
+            
+            <button id="toolbar-btn-e" style="display: none; background: var(--fb-green); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; align-items: center; justify-content: center; font-weight: bold; font-size: 13px;"></button>
+        </div>
+
+        <!-- KANAN: Menu Profil / Admin -->
         <div class="nav-right">
             <button class="menu-btn" onclick="toggleMainMenu()" style="background: none; border: none; font-size: 22px; color: var(--fb-text); cursor: pointer;"><i class="fa-solid fa-circle-user"></i></button>
             <div id="main-menu-popup" class="global-login">
@@ -50,9 +67,16 @@
         </div>
     </nav>
 
+    <!-- TOMBOL DRAWER MENU (DESAIN PULL-TAB MODERN) -->
+    <div style="display: flex; justify-content: center; position: fixed; top: 60px; left: 0; width: 100%; z-index: 1001;">
+        <button id="drawer-toggle-btn" onclick="toggleTopDrawer()" style="background: var(--fb-card); border: 1px solid var(--fb-border); border-top: none; width: 65px; height: 22px; border-radius: 0 0 16px 16px; color: #a0a3a7; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 5px rgba(0,0,0,0.04); transition: background 0.2s, color 0.2s;">
+            <i id="drawer-icon" class="fa-solid fa-chevron-down" style="transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);"></i>
+        </button>
+    </div>
+
     <div class="single-page-container">
         
-        <div id="top-drawer" class="top-drawer-content">
+        <div id="top-drawer" class="top-drawer-content" style="margin-top: 15px;">
             <div style="display: flex; flex-direction: column; gap: 15px; padding-bottom: 5px;">
                 
                 <div class="section-card" style="padding: 10px; display: flex; gap: 8px; align-items: center;">

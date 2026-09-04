@@ -150,22 +150,25 @@ function syncNotes() {
         grid.style.display = 'flex';
         grid.style.flexDirection = 'column';
         grid.style.gap = '8px'; 
-        
-        // Mencegah scroll bocor ke background
         grid.style.overscrollBehavior = 'contain'; 
-        
         grid.innerHTML = ''; 
         
         let items = [];
         snap.forEach(child => { items.push({ key: child.key, ...child.val() }); });
         
-        items.reverse().forEach(d => {
+        // Warna-warni border kiri
+        const borderColors = ['#1877F2', '#2ECC71', '#E74C3C', '#F1C40F', '#9B59B6', '#E67E22'];
+
+        items.reverse().forEach((d, index) => {
             const card = document.createElement('div'); 
             card.className = 'note-card'; 
+            
+            const cardColor = borderColors[index % borderColors.length];
             
             card.style.cssText = `
                 background: #ffffff;
                 border: 1px solid #cdd0d4; 
+                border-left: 5px solid ${cardColor};
                 border-radius: 6px;
                 padding: 10px;
                 display: flex;
@@ -180,12 +183,16 @@ function syncNotes() {
             card.onmouseover = () => {
                 card.style.transform = 'translateY(-2px)';
                 card.style.boxShadow = '0 4px 8px rgba(0,0,0,0.08)';
-                card.style.borderColor = '#aeb1b5'; 
+                card.style.borderTopColor = '#aeb1b5'; 
+                card.style.borderRightColor = '#aeb1b5';
+                card.style.borderBottomColor = '#aeb1b5';
             };
             card.onmouseout = () => {
                 card.style.transform = 'translateY(0)';
                 card.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
-                card.style.borderColor = '#cdd0d4'; 
+                card.style.borderTopColor = '#cdd0d4'; 
+                card.style.borderRightColor = '#cdd0d4';
+                card.style.borderBottomColor = '#cdd0d4';
             };
 
             card.onclick = () => {
@@ -203,8 +210,13 @@ function syncNotes() {
             const previewStr = escapeHTML(d.content);
 
             card.innerHTML = `
-                <div style="font-weight: 600; color: #1c1e21; font-size: 13px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                    ${titleStr}
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                    <div style="font-weight: 600; color: #1c1e21; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 10px;">
+                        ${titleStr}
+                    </div>
+                    <button class="btn-copy-card" style="border: none; background: transparent; cursor: pointer; color: #65676B; padding: 2px;" title="Copy Teks">
+                        <i class="far fa-copy"></i>
+                    </button>
                 </div>
                 <div style="color: #65676B; font-size: 11px; line-height: 1.4; flex-grow: 1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
                     ${previewStr}
@@ -213,6 +225,21 @@ function syncNotes() {
                     <i class="far fa-clock" style="margin-right: 3px;"></i>${formatDate(d.timestamp)}
                 </div>
             `;
+            
+            const copyBtn = card.querySelector('.btn-copy-card');
+            copyBtn.onclick = (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(d.content).then(() => {
+                    const icon = copyBtn.querySelector('i');
+                    icon.className = 'fas fa-check';
+                    icon.style.color = '#2ecc71'; 
+                    setTimeout(() => {
+                        icon.className = 'far fa-copy';
+                        icon.style.color = '#65676B'; 
+                    }, 1500);
+                });
+            };
+
             grid.appendChild(card);
         });
     });

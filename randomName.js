@@ -1,3 +1,8 @@
+// === PENGATURAN FILTER ===
+// Ubah menjadi true untuk HANYA Pulau Jawa, atau false untuk semua provinsi
+const FILTER_HANYA_JAWA = true; 
+const DAFTAR_PROVINSI_JAWA = ["JAWA TIMUR", "JAWA TENGAH", "JAWA BARAT", "BANTEN", "DKI JAKARTA", "DI YOGYAKARTA", "DAERAH ISTIMEWA YOGYAKARTA"];
+
 const STORAGE_BASE_EMAIL = 'xurel_base_email';
 const STORAGE_EMAIL_INDEX = 'xurel_email_index';
 
@@ -52,7 +57,16 @@ export async function generateName() {
                 
                 let flatData = [];
                 for (const prov in data) {
-                    if (prov.toUpperCase().includes("PAPUA")) continue; 
+                    const namaProv = prov.toUpperCase();
+                    
+                    // PENERAPAN FILTER:
+                    if (FILTER_HANYA_JAWA) {
+                        const isJawa = DAFTAR_PROVINSI_JAWA.some(p => namaProv.includes(p));
+                        if (!isJawa) continue;
+                    } else {
+                        if (namaProv.includes("PAPUA")) continue; 
+                    }
+
                     for (const kota in data[prov]) {
                         for (const kec in data[prov][kota]) {
                             for (const desa in data[prov][kota][kec]) {
@@ -97,13 +111,10 @@ export async function generateName() {
         namaTerpakai.push({ name: namaRaw, timestamp: now });
         localStorage.setItem('xurel_used_names', JSON.stringify(namaTerpakai));
 
-        // === 3. LOGIKA PENGACAKAN DATA LENGKAP (DARI SCRIPT PERTAMA) ===
-        
-        // Acak No HP
+        // === 3. LOGIKA PENGACAKAN DATA LENGKAP ===
         const prx = CONFIG.HP_PREFIX[Math.floor(Math.random() * CONFIG.HP_PREFIX.length)];
         const noHp = prx + Math.floor(Math.random() * 100000000).toString().padStart(8, '0');
 
-        // Acak Wilayah (30% Kota Besar, 70% Kota Kecil/Kabupaten)
         let wTarget = [];
         if(Math.random() < 0.30) {
             wTarget = dbWilayah.filter(w => CONFIG.BIG_CITIES.some(kb => (w.kota||"").toUpperCase().includes(kb)));
@@ -114,7 +125,6 @@ export async function generateName() {
         }
         const dataW = wTarget[Math.floor(Math.random() * wTarget.length)];
 
-        // Acak Nama Jalan (50% Nama Pahlawan, 50% Nama Desa asli JSON)
         let jalanRaw = "";
         if(Math.random() < 0.5) {
             const hero = CONFIG.HEROES[Math.floor(Math.random() * CONFIG.HEROES.length)];
@@ -123,20 +133,17 @@ export async function generateName() {
             jalanRaw = dataW.jalan ? dataW.jalan : `Desa ${dataW.desa || dataW.kecamatan}`;
         }
 
-        // Acak Patokan (Probabilitas 40% muncul)
         let patokan = "";
         if (Math.random() < 0.4) {
             patokan = ` (${CONFIG.PATOKAN[Math.floor(Math.random() * CONFIG.PATOKAN.length)]})`;
         }
 
-        // Finalisasi & Merapikan Teks (Title Case)
         const nama = toTitleCase(namaRaw);
         const prov = toTitleCase(dataW.provinsi || "");
         const kota = toTitleCase(dataW.kota || "").replace(/,\s*Kabupaten/gi, "").replace(/Kota Adm\.\s*/gi, "").replace(/Kota\s+/gi, "").replace(/Kabupaten\s+/gi, "Kab. ");
         const kec = toTitleCase(dataW.kecamatan || "");
         const jalan = toTitleCase(jalanRaw).replace(/Jl\./gi, "Jl.").replace(/No\./gi, "No.") + patokan; 
 
-        // Gabungkan seluruh data
         const hasilLengkap = `${nama}, ${noHp}, ${prov}, ${kota}, ${dataW.kodepos || "60111"}, ${jalan}, Kec. ${kec}`;
         
         // === 4. TAMPILKAN HASIL KE KOLOM EMAIL ===
@@ -145,14 +152,23 @@ export async function generateName() {
             inputTarget.value = hasilLengkap;
         }
 
-        // Eksekusi Copy & Ubah UI Tombol
+        // Eksekusi Copy ke Clipboard
         await copyToClipboard(hasilLengkap);
         
+        // Efek UI Centang pada tombol Utama di dalam Drawer
         const btnGen = document.getElementById('btn-gen');
         if(btnGen) {
             const old = btnGen.innerHTML;
             btnGen.innerHTML = '<i class="fa-solid fa-check"></i> Disalin';
             setTimeout(() => { btnGen.innerHTML = old; }, 1000);
+        }
+
+        // Efek UI Centang pada tombol Pintasan Toolbar
+        const toolbarBtnGen = document.getElementById('toolbar-btn-gen');
+        if(toolbarBtnGen) {
+            const oldToolbar = toolbarBtnGen.innerHTML;
+            toolbarBtnGen.innerHTML = '<i class="fa-solid fa-check"></i>';
+            setTimeout(() => { toolbarBtnGen.innerHTML = oldToolbar; }, 1000);
         }
     } catch (err) { 
         console.error(err); 

@@ -62,6 +62,12 @@ export function openShopeeModal(key = null) {
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 }
+window.openShopeeModal = openShopeeModal;
+
+export function closeShopeeForm() {
+    closeModal('modal-shopee-form');
+}
+window.closeShopeeForm = closeShopeeForm;
 
 export function saveShopee() {
     const key = document.getElementById('shopee-edit-key').value;
@@ -84,12 +90,14 @@ export function saveShopee() {
         db.ref('linkshopee').push(data).then(() => closeModal('modal-shopee-form'));
     }
 }
+window.saveShopee = saveShopee;
 
 export async function deleteShopee(key) { 
     if(await showModal("Hapus Link", "Yakin ingin menghapus link ini?", "danger")) {
         db.ref('linkshopee/'+key).remove(); 
     }
 }
+window.deleteShopee = deleteShopee;
 
 export function togglePinShopee(key, currentPinStatus) {
     db.ref('linkshopee/' + key).update({
@@ -97,12 +105,12 @@ export function togglePinShopee(key, currentPinStatus) {
         updatedAt: Date.now() 
     });
 }
+window.togglePinShopee = togglePinShopee;
 
 function renderShopee() {
     const container = document.getElementById('shopee-container'); 
     if(!container) return;
     
-    // Mencegah scroll merambat ke body (scroll bleed)
     container.style.overscrollBehavior = 'contain';
     container.innerHTML = "";
     const isAdmin = !!userAdmin;
@@ -180,7 +188,7 @@ function renderShopee() {
             <button onclick="copyShopeeLink(event, '${data.url}', this)" style="background:#f0f2f5; border:none; width:40px; height:40px; border-radius:8px; display:flex; align-items:center; justify-content:center; color:#65676b; cursor:pointer; margin-right:12px; flex-shrink:0;">
                 <i class="fa-regular fa-copy"></i>
             </button>
-            <div onclick="window.open('${data.url}', '_blank')" style="flex:1; cursor:pointer; overflow:hidden;">
+            <div onclick="openShopeeUrl(event, '${data.url}')" style="flex:1; cursor:pointer; overflow:hidden;">
                 <div style="font-weight:800; color:#1c1e21; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
                     ${pinIconTitle}${data.title}
                 </div>
@@ -190,18 +198,72 @@ function renderShopee() {
         `;
         container.appendChild(wrapper);
     });
+
+    // ====== LOGIKA UNTUK TOMBOL B, C, D, E DI TOOLBAR ======
+    const pinnedLinks = orderedShopee.filter(d => d.isPinned);
+    
+    // Ambil elemen tombol
+    const pinBtns = [
+        document.getElementById('toolbar-btn-b'),
+        document.getElementById('toolbar-btn-c'),
+        document.getElementById('toolbar-btn-d'),
+        document.getElementById('toolbar-btn-e')
+    ];
+
+    // Fungsi pintar untuk mengatur masing-masing tombol secara dinamis
+    pinBtns.forEach((btn, index) => {
+        if (!btn) return; 
+        
+        // Cek apakah ada data pin untuk urutan ini
+        const linkData = pinnedLinks[index];
+        
+        if (linkData) {
+            btn.style.display = 'flex';
+            // Mengambil 2 huruf pertama
+            btn.innerHTML = linkData.title.substring(0, 2).toUpperCase();
+            btn.title = `Salin: ${linkData.title}`;
+            // Override event klik untuk link yang sesuai
+            btn.onclick = (e) => copyShopeeLink(e, linkData.url, btn);
+        } else {
+            // Sembunyikan tombol jika tidak ada link yang di-pin
+            btn.style.display = 'none';
+        }
+    });
 }
 
+export async function openShopeeUrl(event, url) {
+    event.preventDefault(); 
+    event.stopPropagation();
+    
+    if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+        showModal("Peringatan", "Data ini tidak memiliki link yang valid untuk dibuka.", "alert");
+        return;
+    }
+    
+    if (await showModal("Buka Link", "Apakah kamu ingin menuju link ini?", "info")) {
+        window.open(url, '_blank');
+    }
+}
+window.openShopeeUrl = openShopeeUrl;
+
 export function copyShopeeLink(event, url, btnElement) {
-    event.preventDefault(); event.stopPropagation();
+    event.preventDefault(); 
+    event.stopPropagation();
+
+    if (!url) {
+        showModal("Peringatan", "Data kosong, tidak ada yang disalin.", "alert");
+        return;
+    }
+
     navigator.clipboard.writeText(url).then(() => {
         const originalIcon = btnElement.innerHTML; 
         btnElement.innerHTML = '<i class="fa-solid fa-check" style="color:var(--fb-green);"></i>';
         setTimeout(() => { btnElement.innerHTML = originalIcon; }, 1500);
     });
 }
+window.copyShopeeLink = copyShopeeLink;
 
-export function actionRandomLink(event, key, action = 'open', btnElement = null) {
+export async function actionRandomLink(event, key, action = 'open', btnElement = null) {
     event.preventDefault(); event.stopPropagation();
     
     let cardData = shopeeDataCache[key];
@@ -210,7 +272,7 @@ export function actionRandomLink(event, key, action = 'open', btnElement = null)
     let links = cardData.url.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
 
     if(links.length === 0) {
-        return showModal("Peringatan", "Belum ada link valid yang dimasukkan.", "alert");
+        return showModal("Peringatan", "Belum ada link valid yang dimasukkan pada menu ini.", "alert");
     }
 
     let randomLink = links[Math.floor(Math.random() * links.length)];
@@ -222,27 +284,54 @@ export function actionRandomLink(event, key, action = 'open', btnElement = null)
             setTimeout(() => { btnElement.innerHTML = originalIcon; }, 1500);
         });
     } else {
-        window.open(randomLink, '_blank');
+        if (await showModal("Buka Link", "Apakah kamu ingin menuju link acak ini?", "info")) {
+            window.open(randomLink, '_blank');
+        }
     }
 }
+window.actionRandomLink = actionRandomLink;
 
 export function openShopeeList() {
     document.getElementById('modal-shopee-list').classList.add('active');
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
 }
+window.openShopeeList = openShopeeList;
 
-function initAutoCaps() {
+export function closeShopeeListModal() {
+    closeModal('modal-shopee-list');
+}
+window.closeShopeeListModal = closeShopeeListModal;
+
+function initModalsBehavior() {
     const shopeeTitleInput = document.getElementById('shopee-title');
     if (shopeeTitleInput) {
         shopeeTitleInput.addEventListener('input', function() {
             this.value = this.value.toUpperCase();
         });
     }
+
+    const formModal = document.getElementById('modal-shopee-form');
+    if (formModal) {
+        formModal.addEventListener('click', function(e) {
+            if (e.target === formModal) {
+                closeShopeeForm();
+            }
+        });
+    }
+
+    const listModal = document.getElementById('modal-shopee-list');
+    if (listModal) {
+        listModal.addEventListener('click', function(e) {
+            if (e.target === listModal) {
+                closeShopeeListModal();
+            }
+        });
+    }
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAutoCaps);
+    document.addEventListener('DOMContentLoaded', initModalsBehavior);
 } else {
-    initAutoCaps();
+    initModalsBehavior();
 }
