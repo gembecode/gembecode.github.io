@@ -9,11 +9,17 @@ const PROVIDERS = {
     "herosms": { name: "HER", url: "https://hero.camarugulam.workers.dev" },
     "cariotp": { name: "CRP", url: "https://crop.camarugulam.workers.dev" },
     "otpinst": { name: "OIN", url: "https://otpinstan.camarugulam.workers.dev" },
-    "otpcepat": { name: "OCT", url: "https://ocepat.camarugulam.workers.dev" },
-    "svco": { name: "SVC", url: "https://svco.camarugulam.workers.dev" }};
+    "otpcepat": { name: "OCT", url: "https://ocepat.camarugulam.workers.dev" }, // Kunci diperbaiki ke otpcepat
+    "svco": { name: "SVC", url: "https://svco.camarugulam.workers.dev" }
+};
 
 let activeProviderKey = localStorage.getItem('xurel_provider') || "smscode";
-let BASE_URL = PROVIDERS[activeProviderKey].url;
+// Fallback jika di local storage masih tersimpan kunci lama 'otcepat'
+if (activeProviderKey === "otcepat") {
+    activeProviderKey = "otpcepat";
+    localStorage.setItem('xurel_provider', "otpcepat");
+}
+let BASE_URL = (PROVIDERS[activeProviderKey] || PROVIDERS["otpcepat"]).url;
 
 let currentServerName = ""; 
 let smsInitialized = false; 
@@ -73,7 +79,7 @@ function formatPrice(price) {
 }
 
 function getOperatorBadge(provider, opCode, rank) {
-    if ((provider === "herosms" || provider === "otpcepat" || provider === "svco" || provider === "nixpoin" || provider === "smscode") && opCode && opCode !== "any") {
+    if ((provider === "herosms" || provider === "otpcepat" || provider === "otcepat" || provider === "svco" || provider === "nixpoin" || provider === "smscode") && opCode && opCode !== "any") {
         const opMap = { "telkomsel": "TL", "indosat": "ST", "axis": "XS", "three": "TR", "xl": "XL", "smartfren": "SM" };
         let initial = opMap[opCode.toLowerCase()] || opCode.substring(0, 2).toUpperCase();
         return `<span style="font-size:11px; font-family:sans-serif; font-weight:900; color:#fff; margin-left:8px; background:var(--fb-blue); padding:2px 6px; border-radius:4px; box-shadow:0 1px 2px rgba(0,0,0,0.2);">${initial}</span>`;
@@ -370,9 +376,10 @@ async function loadSmsPrices() {
             cachedProductsData = json.data;
             renderOperatorListFirst(); 
         }
-        else if (["herosms", "otpcepat", "nixpoin"].includes(activeProviderKey)) {
+        // Menambahkan 'otcepat' agar konsisten jika masih tersisa di sesi browser
+        else if (["herosms", "otpcepat", "otcepat", "nixpoin"].includes(activeProviderKey)) {
             let item = json.data.find(x => x.name && x.name.toLowerCase().includes("shope")) || json.data[0];
-            let pid = item ? (item.catalog_product_id || item.id) : "ka";
+            let pid = item ? (item.catalog_product_id || item.id) : "1";
             let name = "Shopee";
             let basePrice = item ? item.price : 0;
             let opStockMap = item && item.operatorStock ? item.operatorStock : {};
@@ -407,7 +414,6 @@ async function loadSmsPrices() {
                 let pid = shopeeData.serviceId || "1"; 
                 let countryId = shopeeData.country || 1; 
                 
-                // PERBAIKAN: Mengubah filter harga maksimal jadi 0.99
                 let prices = (shopeeData.customPrice || []).filter(p => parseFloat(p.price) <= 0.99).sort((a, b) => parseFloat(b.price) - parseFloat(a.price)); 
                 
                 let operators = (shopeeData.operators || []).filter(o => o.code && o.code.toLowerCase() !== 'any');
@@ -451,7 +457,7 @@ function createCardHTML(oId, phone, priceDisplay, resendState, cancelState, repl
     let borderColor = "#95a5a6"; 
     if (activeProviderKey === "herosms") borderColor = "#8e44ad";
     if (activeProviderKey === "smsbower") borderColor = "#27ae60";
-    if (activeProviderKey === "otpcepat") borderColor = "#e74c3c"; 
+    if (activeProviderKey === "otpcepat" || activeProviderKey === "otcepat") borderColor = "#e74c3c"; 
     if (activeProviderKey === "svco") borderColor = "#007bff"; 
     if (activeProviderKey === "nixpoin") borderColor = "#2980b9"; 
 
@@ -500,7 +506,7 @@ export async function executeBuySms(pid, price, name, operator, rank = "") {
 
     const pText = formatPrice(price);
     let opText = "";
-    if (["herosms", "otpcepat", "svco", "nixpoin", "smscode"].includes(activeProviderKey) && operator !== "any") {
+    if (["herosms", "otpcepat", "otcepat", "svco", "nixpoin", "smscode"].includes(activeProviderKey) && operator !== "any") {
         opText = ` (Prov: ${operator.toUpperCase()})`;
     }
 
@@ -509,7 +515,8 @@ export async function executeBuySms(pid, price, name, operator, rank = "") {
     let payload;
     if (activeProviderKey === "svco") {
         payload = { product_id: parseInt(pid), price: Number(price), operator: operator, country: parseInt(rank) || 1 };
-    } else if (["herosms", "smsbower", "otpcepat", "nixpoin"].includes(activeProviderKey)) {
+    } else if (["herosms", "smsbower", "otpcepat", "otcepat", "nixpoin"].includes(activeProviderKey)) {
+        // Payload membawa operator secara presisi ke Worker
         payload = { product_id: String(pid), price: price, operator: operator };
     } else if (activeProviderKey === "smscode") {
         if (operator !== "any") {
@@ -609,7 +616,6 @@ function renderSmsOrders(orders) {
     const activeIds = orders.map(o => String(o.id));
     const currentCards = container.querySelectorAll('.order-card');
     
-    // LOGIKA PENGHAPUSAN KARTU (TIDAK LANGSUNG DIHAPUS JIKA SUDAH ADA OTP)
     currentCards.forEach(card => {
         const cardId = card.id.replace(`order-${activeProviderKey}-`, '');
         if (!activeIds.includes(cardId)) {
@@ -644,30 +650,26 @@ function renderSmsOrders(orders) {
         
         const existingCard = document.getElementById(`order-${activeProviderKey}-${o.id}`);
 
-        // PERBAIKAN WAKTU: Pastikan kita tidak menimpa expire yang sudah berjalan jika server gagal memberi tanggal!
         let orderTime;
         if (o.created_at) {
-            orderTime = o.created_at; // Waktu real dari server Cloudflare Worker (sinkron antar perangkat)
+            orderTime = o.created_at;
         } else if (existingCard) {
-            // Jika api timeout memberikan tanggal tapi kartu sudah jalan di UI, pakai memori UI (Jangan reset!)
             const oldExpire = parseInt(existingCard.querySelector('.sms-timer').dataset.expire);
             orderTime = oldExpire - 600000;
         } else {
-            // Fallback terakhir (misal nomor baru beli tapi server gagal kirim waktu)
             orderTime = Date.now();
         }
 
-        const expire = orderTime + 600000; // Timer jalan 10 menit
+        const expire = orderTime + 600000;
         const passed2Mins = (Date.now() - orderTime) >= 120000; 
 
         let otpDisplay = o.otp_code ? `<span onclick="copyOtpCode('${o.otp_code}', this)" style="cursor:pointer; color:#00897B; letter-spacing:6px; font-size:32px; font-weight:900; display: inline-flex; align-items: center;" title="Klik untuk menyalin">${o.otp_code.replace(/(\d{3})(?=\d)/g, '$1 ')}</span>` : `<div class="loader-bars"><span></span><span></span><span></span></div>`;
         const resendState = o.otp_code ? '' : 'disabled';
-        const cancelState = (passed2Mins || ["smsbower", "otpcepat", "nixpoin"].includes(activeProviderKey)) && !o.otp_code ? '' : 'disabled';
-        const replaceState = (passed2Mins && !["smsbower", "otpcepat", "svco", "nixpoin"].includes(activeProviderKey)) && !o.otp_code ? '' : 'disabled';
+        const cancelState = (passed2Mins || ["smsbower", "otpcepat", "otcepat", "nixpoin"].includes(activeProviderKey)) && !o.otp_code ? '' : 'disabled';
+        const replaceState = (passed2Mins && !["smsbower", "otpcepat", "otcepat", "svco", "nixpoin"].includes(activeProviderKey)) && !o.otp_code ? '' : 'disabled';
 
         if (existingCard) {
             const timerSpan = existingCard.querySelector('.sms-timer');
-            // SEKARANG AMAN: dataset.expire hanya akan sinkron dengan orderTime server (tidak akan mengulang sendiri ke Date.now())
             if (timerSpan) timerSpan.dataset.expire = expire;
 
             const phoneTextSpan = existingCard.querySelector('.phone-text-span');
@@ -707,7 +709,7 @@ function updateSmsTimers() {
 }
 
 export async function actSms(action, id) {
-    if (action === 'replace' && ["smsbower", "otpcepat", "svco", "nixpoin"].includes(activeProviderKey)) {
+    if (action === 'replace' && ["smsbower", "otpcepat", "otcepat", "svco", "nixpoin"].includes(activeProviderKey)) {
         showModal("Peringatan", "Fitur Replace tidak didukung oleh provider ini.", "alert"); 
         return;
     }
