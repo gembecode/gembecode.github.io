@@ -5,10 +5,11 @@ import { db, auth } from './firebase.js';
 // 1. KONFIGURASI PROVIDER & HARGA SPESIFIK
 // ==========================================
 const PROVIDERS = {
-    "herosms": { name: "HER", url: "https://hero.camarugulam.workers.dev", currency: "USD", minPrice: 0, maxPrice: 1500 },
-    "smsvirtual": { name: "SVC", url: "https://svco.camarugulam.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 1500 },
-    "smscode": { name: "COD", url: "https://code.camarugulam.workers.dev", currency: "IDR", minPrice: 300, maxPrice: 1500 },
-    "otpcepat": { name: "CEP", url: "https://ocepat.camarugulam.workers.dev", currency: "IDR", minPrice: 0, maxPrice: 2000 } // <-- OtpCepat Ditambahkan
+    "herosms": { name: "HER", url: "https://hero.aam-zip.workers.dev", currency: "USD", minPrice: 0, maxPrice: 1500 },
+    //"hwa":     { name: "HWA", url: "https://hwa.aam-zip.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 3500 },
+    //"smsvirtual": { name: "SVC", url: "https://svco.aam-zip.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 1500 },
+    "smscode": { name: "COD", url: "https://sms.aam-zip.workers.dev", currency: "IDR", minPrice: 675, maxPrice: 1000 },
+    "otpcepat": { name: "CEP", url: "https://cepat.aam-zip.workers.dev", currency: "IDR", minPrice: 0, maxPrice: 1300 } // <-- OtpCepat Ditambahkan
 };
 
 let activeProviderKey = localStorage.getItem('xurel_provider') || "herosms";
@@ -384,7 +385,6 @@ async function loadSmsPrices() {
     let currentMinPrice = PROVIDERS[activeProviderKey].minPrice;
     let currentMaxPrice = PROVIDERS[activeProviderKey].maxPrice;
     
-    // --> OtpCepat ditambahkan ke filter langsung mata uang IDR
     if (activeProviderKey === "smscode" || activeProviderKey === "otpcepat") {
         json.data
             .filter(i => i.price >= currentMinPrice && i.price <= currentMaxPrice)
@@ -525,7 +525,6 @@ window.openProviderMenu = openProviderMenu;
 function createCardHTML(oId, phone, priceDisplay, resendState, cancelState, replaceState, otpDisplay, isDone = false, isRecycled = false, expireTime = 0, operatorName = "UNKNOWN", isHidden = false) {
     const doneStyle = isDone ? 'style="background:#e6f4ea; color:var(--fb-green); border-color:var(--fb-green);"' : 'disabled';
     
-    // --> Tambahkan warna Oranye khusus untuk OtpCepat
     let bColor = activeProviderKey === "herosms" ? "#8e44ad" : 
                  activeProviderKey === "hwa" ? "#25D366" : 
                  activeProviderKey === "otpcepat" ? "#fd9644" : 
@@ -565,6 +564,102 @@ function createCardHTML(oId, phone, priceDisplay, resendState, cancelState, repl
     </div>`;
 }
 
+// ==========================================
+// 6.5. FUNGSI MENAMPILKAN NOTIF DONE SAAT BELI
+// ==========================================
+function showBuySuccessNotif() {
+    const elBal = document.getElementById('sms-balance');
+    if(!elBal) return;
+
+    let existingNotif = document.getElementById('sms-done-notif');
+    if(existingNotif) {
+        existingNotif.remove();
+    }
+
+    // Sembunyikan saldo sementara
+    elBal.style.display = 'none';
+
+    const notif = document.createElement('div');
+    notif.id = 'sms-done-notif';
+    notif.innerHTML = '<i class="fa-solid fa-circle-check"></i> Done';
+    
+    notif.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #25D366;
+        font-weight: 900;
+        font-size: 14px;
+        background: #e6f4ea;
+        padding: 4px 10px;
+        border-radius: 12px;
+        transition: opacity 0.5s ease;
+    `;
+
+    // Sisipkan notifikasi di posisi yang sama persis dengan elemen saldo
+    elBal.parentNode.insertBefore(notif, elBal);
+
+    setTimeout(() => {
+        if(document.getElementById('sms-done-notif') === notif) {
+            notif.style.opacity = '0';
+            setTimeout(() => {
+                if(document.getElementById('sms-done-notif') === notif) {
+                    notif.remove();
+                    elBal.style.display = ''; // Munculkan saldo kembali
+                }
+            }, 500);
+        }
+    }, 3000);
+}
+
+// ==========================================
+// 6.6. FUNGSI MENAMPILKAN NOTIF BIRU SAAT OTP MASUK
+// ==========================================
+function showOtpSuccessNotif() {
+    const elBal = document.getElementById('sms-balance');
+    if(!elBal) return;
+
+    let existingNotif = document.getElementById('sms-otp-notif');
+    if(existingNotif) {
+        existingNotif.remove();
+    }
+
+    // Sembunyikan saldo sementara
+    elBal.style.display = 'none';
+
+    const notif = document.createElement('div');
+    notif.id = 'sms-otp-notif';
+    notif.innerHTML = '<i class="fa-solid fa-envelope-open-text"></i> Baru'; 
+    
+    notif.style.cssText = `
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #007bff; /* Warna Biru */
+        font-weight: 900;
+        font-size: 14px;
+        background: #cce5ff; /* Background Biru Muda */
+        padding: 4px 10px;
+        border-radius: 12px;
+        transition: opacity 0.5s ease;
+    `;
+
+    // Sisipkan notifikasi di posisi saldo
+    elBal.parentNode.insertBefore(notif, elBal);
+
+    setTimeout(() => {
+        if(document.getElementById('sms-otp-notif') === notif) {
+            notif.style.opacity = '0';
+            setTimeout(() => {
+                if(document.getElementById('sms-otp-notif') === notif) {
+                    notif.remove();
+                    elBal.style.display = ''; // Munculkan saldo kembali
+                }
+            }, 500);
+        }
+    }, 3000);
+}
+
 export async function executeBuySms(pid, price, name, operator, countryRank = "") {
     try {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -578,7 +673,6 @@ export async function executeBuySms(pid, price, name, operator, countryRank = ""
     let payload;
     if (activeProviderKey === "smsvirtual") {
         payload = { product_id: parseInt(pid), price: Number(price), operator: operator, country: parseInt(countryRank) || 1 };
-    // --> OtpCepat ditambahkan ke logika format payload ini
     } else if (activeProviderKey === "herosms" || activeProviderKey === "hwa" || activeProviderKey === "otpcepat") {
         payload = { product_id: String(pid), price: price, operator: operator };
     } else if (activeProviderKey === "smscode") {
@@ -603,6 +697,10 @@ export async function executeBuySms(pid, price, name, operator, countryRank = ""
         
         pollSms(); updateSmsBal();
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Panggil notifikasi DONE yang akan menimpa saldo di sini
+        showBuySuccessNotif();
+
     } else {
         showModal("Gagal", j.error?.message || "Stok Sedang Kosong.", "alert");
     }
@@ -676,13 +774,17 @@ function renderSmsOrders() {
         let isHidden = !!o.hidden; 
         
         let orderTime = o.created_at || Date.now();
-        const expire = orderTime + 900000; 
+        const expire = orderTime + 1200000; // 20 Menit
         
         const passed2Mins = (Date.now() - orderTime) >= 120000; 
 
-        if (o.otp_code && !notifiedOtps.includes(String(o.id))) {
+        // Gabungkan ID Pesanan dan Kode OTP agar resend tetap terbaca sebagai OTP baru
+        let otpKey = `${o.id}_${o.otp_code}`; 
+        
+        if (o.otp_code && !notifiedOtps.includes(otpKey)) {
             playSimpleSound('otp');
-            notifiedOtps.push(String(o.id));
+            showOtpSuccessNotif(); // Memanggil notif warna biru
+            notifiedOtps.push(otpKey);
             
             if (notifiedOtps.length > 50) notifiedOtps.shift();
             
@@ -717,7 +819,7 @@ function updateSmsTimers() {
             el.innerText = `${Math.floor(diff/60)}:${(diff%60).toString().padStart(2,'0')}`;
             el.style.color = diff < 600 ? "var(--fb-red)" : "var(--fb-blue)"; 
 
-            let orderTime = end - 900000; 
+            let orderTime = end - 1200000; // 20 Menit
             let passed2Mins = (now - orderTime) >= 120000; 
 
             if (passed2Mins) {
