@@ -8,7 +8,7 @@ const PROVIDERS = {
     "herosms": { name: "HER", url: "https://hero.camarugulam.workers.dev", currency: "USD", minPrice: 0, maxPrice: 1500 },
     //"hwa":     { name: "HWA", url: "https://hwa.aam-zip.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 3500 },
     //"smsvirtual": { name: "SVC", url: "https://svco.camarugulam.workers.dev", currency: "USD", minPrice: 1000, maxPrice: 1500 },
-    "smscode": { name: "COD", url: "https://code.camarugulam.workers.dev", currency: "IDR", minPrice: 675, maxPrice: 1000 },
+    "smscode": { name: "COD", url: "https://code.camarugulam.workers.dev", currency: "IDR", minPrice: 400, maxPrice: 1000 },
     "otpcepat": { name: "CEP", url: "https://ocepat.camarugulam.workers.dev", currency: "IDR", minPrice: 0, maxPrice: 1300 } // <-- OtpCepat Ditambahkan
 };
 
